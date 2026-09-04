@@ -1,0 +1,139 @@
+---
+import { getCollection } from "astro:content";
+import { Picture } from "astro:assets";
+import Layout from "@/layouts/Layout.astro";
+import Container from "@/components/container.astro";
+import Sectionhead from "@/components/sectionhead.astro";
+
+// ⚠️ Client-side gate only — not real security. The page content is still
+// present in the HTML source and this password ships in the JS bundle.
+// Change the password here.
+const EVENTS_PASSWORD = "astronaut";
+
+// Filter blog entries with 'draft: false' & date before current date
+const publishedBlogEntries = await getCollection("events", ({ data }) => {
+  return !data.draft && data.publishDate < new Date();
+});
+
+// Sort content entries by publication date
+publishedBlogEntries.sort(function (a, b) {
+  return b.data.publishDate.valueOf() - a.data.publishDate.valueOf();
+});
+---
+
+<Layout title="Events">
+  <Container>
+    <Sectionhead>
+      <Fragment slot="title">Our Events</Fragment>
+      <Fragment slot="desc">This page is still under construction.</Fragment>
+    </Sectionhead>
+
+    {/* Password gate */}
+    <div id="events-gate" class="max-w-md mx-auto mt-16 text-center">
+      <span
+        class="inline-flex items-center gap-2 rounded-full bg-amber-100 text-amber-700 text-xs font-semibold uppercase tracking-wider px-3 py-1">
+        <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+        In progress
+      </span>
+
+      <p class="text-slate-500 mt-5 leading-relaxed">
+        We're still putting this page together. Enter the password to preview it.
+      </p>
+
+      <form id="events-form" class="mt-6 flex flex-col gap-3">
+        <input
+          id="events-password"
+          type="password"
+          autocomplete="off"
+          placeholder="Password"
+          class="w-full rounded-md border border-gray-300 px-4 py-2.5 text-center focus:outline-none focus:ring-2 focus:ring-black"
+        />
+        <button
+          type="submit"
+          class="w-full rounded-md bg-black text-white px-4 py-2.5 font-medium hover:bg-gray-800 transition">
+          Unlock
+        </button>
+        <p id="events-error" class="text-sm text-red-500 h-5" aria-live="polite">
+        </p>
+      </form>
+    </div>
+
+    {/* Protected content */}
+    <main id="events-content" class="mt-16" hidden>
+      <ul class="grid gap-16 max-w-4xl mx-auto">
+        {
+          publishedBlogEntries.map((blogPostEntry, index) => (
+            <li>
+              <a href={`/events/${blogPostEntry.slug}`}>
+                <div class="grid md:grid-cols-2 gap-5 md:gap-10 items-center">
+                  <Picture
+                    src={blogPostEntry.data.image.src}
+                    alt={blogPostEntry.data.image.alt}
+                    sizes="(max-width: 800px) 100vw, 800px"
+                    width={800}
+                    height={600}
+                    loading={index <= 2 ? "eager" : "lazy"}
+                    decoding={index <= 2 ? "sync" : "async"}
+                    class="w-full rounded-md object-cover object-center bg-white"
+                  />
+                  <div>
+                    <span class="text-blue-400 uppercase tracking-wider text-sm font-medium">
+                      {blogPostEntry.data.category}
+                    </span>
+
+                    <h2 class="text-3xl font-semibold leading-snug tracking-tight mt-1 ">
+                      {blogPostEntry.data.title}
+                    </h2>
+
+                    <div class="flex gap-2 mt-3">
+                      <span class="text-gray-400">
+                        {blogPostEntry.data.author}
+                      </span>
+                      <span class="text-gray-400">• </span>
+                      <time
+                        class="text-gray-400"
+                        datetime={blogPostEntry.data.publishDate.toISOString()}>
+                        {blogPostEntry.data.publishDate.toDateString()}
+                      </time>
+                    </div>
+                  </div>
+                </div>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </main>
+  </Container>
+</Layout>
+
+<script define:vars={{ EVENTS_PASSWORD }}>
+  const KEY = "events-unlocked";
+  const gate = document.getElementById("events-gate");
+  const content = document.getElementById("events-content");
+  const form = document.getElementById("events-form");
+  const input = document.getElementById("events-password");
+  const error = document.getElementById("events-error");
+
+  function unlock() {
+    gate.hidden = true;
+    content.hidden = false;
+  }
+
+  if (sessionStorage.getItem(KEY) === "1") {
+    unlock();
+  }
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (input.value === EVENTS_PASSWORD) {
+      sessionStorage.setItem(KEY, "1");
+      error.textContent = "";
+      unlock();
+    } else {
+      error.textContent = "Wrong password.";
+      input.value = "";
+      input.focus();
+    }
+  });
+</script>

@@ -2,17 +2,27 @@
 import Button from "./ui/button.astro";
 ---
 
-<!-- To make this contact form work, create your free access key from https://web3forms.com/
-     Then you will get all form submissions in your email inbox. -->
+<!--
+  This contact form uses Netlify Forms (https://docs.netlify.com/forms/setup/).
+  It only works on a deployed Netlify site (or via `netlify dev`), not in `astro dev`.
+  Submissions appear in the Netlify dashboard under Forms > "contact".
+  Configure email/Slack notifications in: Site settings > Forms > Form notifications.
+-->
 <form
-  action="https://api.web3forms.com/submit"
+  name="contact"
   method="POST"
+  action="/contact/"
+  data-netlify="true"
+  data-netlify-honeypot="bot-field"
   id="form"
   class="needs-validation"
   novalidate>
-  <input type="hidden" name="access_key" value="YOUR_ACCESS_KEY_HERE" />
-  <!-- Create your free access key from https://web3forms.com/ -->
-  <input type="checkbox" class="hidden" style="display:none" name="botcheck" />
+  <!-- Required by Netlify to match the submission to this form -->
+  <input type="hidden" name="form-name" value="contact" />
+  <!-- Honeypot: bots fill this, humans don't -->
+  <p class="hidden">
+    <label>Don’t fill this out if you’re human: <input name="bot-field" /></label>
+  </p>
   <div class="mb-5">
     <input
       type="text"
@@ -80,6 +90,14 @@ import Button from "./ui/button.astro";
   const form = document.getElementById("form");
   const result = document.getElementById("result");
 
+  const encode = (data) =>
+    Object.keys(data)
+      .map(
+        (key) =>
+          encodeURIComponent(key) + "=" + encodeURIComponent(data[key])
+      )
+      .join("&");
+
   form.addEventListener("submit", function (e) {
     e.preventDefault();
     form.classList.add("was-validated");
@@ -87,37 +105,36 @@ import Button from "./ui/button.astro";
       form.querySelectorAll(":invalid")[0].focus();
       return;
     }
+
     const formData = new FormData(form);
     const object = Object.fromEntries(formData);
-    const json = JSON.stringify(object);
 
+    result.classList.remove("text-green-500", "text-red-500");
+    result.style.display = "";
     result.innerHTML = "Sending...";
 
-    fetch("https://api.web3forms.com/submit", {
+    fetch("/", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: json,
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: encode({ "form-name": "contact", ...object }),
     })
-      .then(async (response) => {
-        let json = await response.json();
-        if (response.status == 200) {
+      .then((response) => {
+        if (response.ok) {
           result.classList.add("text-green-500");
-          result.innerHTML = json.message;
+          result.innerHTML = "Thanks! Your message has been sent.";
+          form.reset();
         } else {
-          console.log(response);
           result.classList.add("text-red-500");
-          result.innerHTML = json.message;
+          result.innerHTML =
+            "Something went wrong. Please try again or email us directly.";
         }
       })
       .catch((error) => {
         console.log(error);
+        result.classList.add("text-red-500");
         result.innerHTML = "Something went wrong!";
       })
       .then(function () {
-        form.reset();
         form.classList.remove("was-validated");
         setTimeout(() => {
           result.style.display = "none";
