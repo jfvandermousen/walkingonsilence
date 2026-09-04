@@ -2,6 +2,7 @@
 import { Picture } from "astro:assets";
 import heroImage from "@/assets/hero.png";
 import Link from "@/components/ui/link.astro";
+import Button from "@/components/ui/button.astro";
 import { Icon } from "astro-icon/components";
 ---
 
@@ -22,7 +23,7 @@ import { Icon } from "astro-icon/components";
       class="text-5xl lg:text-6xl xl:text-7xl font-bold lg:tracking-tight xl:tracking-tighter">
       A man walking on silence
     </h1>
-    <p class="text-lg mt-4 text-slate-600 max-w-xl">
+    <p class="text-lg mt-4 text-slate-600 dark:text-slate-300 max-w-xl">
       He let the Earth breathe without him, for the length of one orbit.<wbr /> Up
       there, the cities are only embers and the borders dissolve beneath the blue
       curve. Every heartbeat echoes inside the suit like a distant drum, and the
@@ -38,16 +39,21 @@ import { Icon } from "astro-icon/components";
 
         Contact me
       </Link>
-      <Link
+      <Button
+        id="theme-toggle"
+        type="button"
         size="lg"
         style="outline"
-        rel="noopener"
-        href="https://github.com/surjithctly/astroship"
-        class="flex gap-1 items-center justify-center"
-        target="_blank">
-        <Icon class="text-black w-4 h-4" name="bx:bxl-github" />
-        GitHub Repo
-      </Link>
+        class="flex gap-1 items-center justify-center">
+        Try and guess what happens
+      </Button>
     </div>
   </div>
 </main>
+
+<script is:inline>
+  document.getElementById("theme-toggle")?.addEventListener("click", () => {
+    const isDark = document.documentElement.classList.toggle("dark");
+    localStorage.setItem("theme", isDark ? "dark" : "light");
+  });
+</script>
